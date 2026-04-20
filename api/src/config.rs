@@ -16,9 +16,8 @@ impl Config {
                 .unwrap_or_else(|_| "8083".to_string())
                 .parse()
                 .expect("API_PORT must be a valid port number"),
-            scraper_user_agent: std::env::var("SCRAPER_USER_AGENT").unwrap_or_else(|_| {
-                "suplex/0.1 (+https://github.com/mtslzr/suplex)".to_string()
-            }),
+            scraper_user_agent: std::env::var("SCRAPER_USER_AGENT")
+                .unwrap_or_else(|_| "suplex/0.1 (+https://github.com/mtslzr/suplex)".to_string()),
             scraper_rate_limit_ms: std::env::var("SCRAPER_RATE_LIMIT_MS")
                 .unwrap_or_else(|_| "1000".to_string())
                 .parse()
