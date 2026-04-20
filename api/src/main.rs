@@ -1,11 +1,16 @@
 mod config;
 mod db;
 mod entities;
+mod external;
 mod graphql;
+
+use std::sync::Arc;
 
 use axum::Router;
 use axum::routing::get;
 use tower_http::cors::{Any, CorsLayer};
+
+use external::cagematch::CagematchClient;
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +24,12 @@ async fn main() {
     let config = config::Config::from_env();
     let db = db::connect(&config.database_url).await;
 
-    let schema = graphql::build_schema(db.clone());
+    let cagematch = Arc::new(CagematchClient::new(
+        &config.scraper_user_agent,
+        config.scraper_rate_limit_ms,
+    ));
+
+    let schema = graphql::build_schema(db.clone(), cagematch.clone());
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

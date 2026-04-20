@@ -1,12 +1,16 @@
-.PHONY: backup build build-api build-web clean dev dev-api dev-db dev-web down fmt help install-web lint restore run test test-api test-web up
+.PHONY: backup build build-api build-web clean dev dev-api dev-db dev-web down env fmt help install-web lint restore run test test-api test-web up
+
+## Copy .env.example to .env if missing (no-op otherwise)
+env:
+	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
 
 ## Rebuild and launch everything in Docker (localhost:3003)
-run:
+run: env
 	docker compose build
 	docker compose up
 
 ## Launch existing containers without rebuilding
-up:
+up: env
 	docker compose up
 
 ## Rebuild only the API image
