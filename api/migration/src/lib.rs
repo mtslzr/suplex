@@ -2,6 +2,7 @@ pub use sea_orm_migration::prelude::*;
 
 mod m20260420_000001_create_promotions;
 mod m20260420_000002_create_sync_log;
+mod m20260420_000003_create_titles;
 
 pub struct Migrator;
 
@@ -11,6 +12,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20260420_000001_create_promotions::Migration),
             Box::new(m20260420_000002_create_sync_log::Migration),
+            Box::new(m20260420_000003_create_titles::Migration),
         ]
     }
 }

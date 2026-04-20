@@ -3,6 +3,7 @@ mod db;
 mod entities;
 mod external;
 mod graphql;
+mod services;
 
 use std::sync::Arc;
 
