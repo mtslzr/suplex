@@ -122,8 +122,8 @@ pub fn parse_promotion_metadata(html: &str) -> PromotionMetadata {
     let doc = Html::parse_document(html);
 
     let (name_from_title, abbrev_from_title) = extract_name_and_abbrev_from_title(&doc);
-    let abbreviation = extract_labeled_value(&doc, "Current abbreviation").or(abbrev_from_title);
-    let country = extract_labeled_value(&doc, "Location");
+    let abbreviation = extract_labeled_value(html, "Current abbreviation").or(abbrev_from_title);
+    let country = extract_labeled_value(html, "Location");
     let logo_url = extract_logo_url(&doc);
 
     PromotionMetadata {
@@ -214,31 +214,19 @@ fn extract_name_and_abbrev_from_title(doc: &Html) -> (Option<String>, Option<Str
     (Some(head), None)
 }
 
-fn extract_labeled_value(doc: &Html, label: &str) -> Option<String> {
-    let sel = Selector::parse("*").unwrap();
-    let label_lower = label.to_lowercase();
-    let mut best: Option<String> = None;
-    let mut best_len = usize::MAX;
-
-    for el in doc.select(&sel) {
-        let text: String = el.text().collect();
-        let trimmed = text.trim();
-        if trimmed.len() >= best_len {
-            continue;
-        }
-        if !trimmed.to_lowercase().starts_with(&label_lower) {
-            continue;
-        }
-        let after = trimmed[label.len()..]
-            .trim_start_matches(':')
-            .trim()
-            .to_string();
-        if !after.is_empty() {
-            best = Some(after);
-            best_len = trimmed.len();
-        }
-    }
-    best
+/// Pull "Label: Value" from raw HTML, tolerating arbitrary tags between the
+/// label and the value (e.g. `<dt>Label:</dt><dd>Value</dd>` or
+/// `<div>Label: <a>Value</a></div>`). Stops the value at the next tag or newline.
+fn extract_labeled_value(html: &str, label: &str) -> Option<String> {
+    let pattern = format!(
+        r"{}:\s*(?:<[^>]*>\s*)*([^<\r\n]+?)\s*(?:<|$)",
+        regex::escape(label)
+    );
+    let re = regex::Regex::new(&pattern).ok()?;
+    let caps = re.captures(html)?;
+    caps.get(1)
+        .map(|m| m.as_str().trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
 fn extract_logo_url(doc: &Html) -> Option<String> {
