@@ -32,7 +32,8 @@ impl CagematchClient {
         format!("{}/?id=8&nr={}", self.base_url, cagematch_id)
     }
 
-    /// Lightweight validation: confirm the promotion page returns HTTP 200.
+    /// Lightweight validation: confirm the promotion page returns HTTP 200
+    /// and isn't cagematch's soft 404 (served as HTTP 200 with an error body).
     /// Whether the ID maps to an actual promotion (vs some other entity) is
     /// checked during the v0.3 full scrape.
     pub async fn validate_promotion(&self, cagematch_id: i32) -> Result<(), String> {
@@ -48,6 +49,15 @@ impl CagematchClient {
             return Err(format!(
                 "cagematch.net returned HTTP {} for id={cagematch_id}",
                 res.status().as_u16()
+            ));
+        }
+        let body = res
+            .text()
+            .await
+            .map_err(|e| format!("failed to read cagematch.net response: {e}"))?;
+        if body.contains("Error 404 - Page not found") {
+            return Err(format!(
+                "no promotion found on cagematch.net for id={cagematch_id}"
             ));
         }
         Ok(())
