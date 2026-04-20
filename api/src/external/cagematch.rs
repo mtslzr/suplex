@@ -158,16 +158,16 @@ pub fn parse_titles_listing(html: &str) -> Vec<ScrapedTitle> {
             if text.is_empty() {
                 continue;
             }
-            if let Some(id) = extract_cagematch_nr(href, 5) {
-                if title_id.is_none() {
-                    title_id = Some(id);
-                    title_name = Some(text);
-                }
-            } else if let Some(id) = extract_cagematch_nr(href, 2) {
-                if champion_id.is_none() {
-                    champion_id = Some(id);
-                    champion_name = Some(text);
-                }
+            if let Some(id) = extract_cagematch_nr(href, 5)
+                && title_id.is_none()
+            {
+                title_id = Some(id);
+                title_name = Some(text);
+            } else if let Some(id) = extract_cagematch_nr(href, 2)
+                && champion_id.is_none()
+            {
+                champion_id = Some(id);
+                champion_name = Some(text);
             }
         }
 
