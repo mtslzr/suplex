@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use async_graphql::{Context, InputObject, Object, Result};
+use async_graphql::{Context, InputObject, Object, Result, SimpleObject};
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 
 use crate::entities::promotion;
 use crate::external::cagematch::CagematchClient;
+use crate::services::scraper;
 
 use super::types::promotion::PromotionType;
 
@@ -24,13 +25,20 @@ pub struct UpdatePromotionInput {
     pub enabled: Option<bool>,
 }
 
+#[derive(SimpleObject)]
+pub struct ScrapeResult {
+    pub promotion_id: Uuid,
+    pub titles_created: i32,
+    pub titles_updated: i32,
+    pub error: Option<String>,
+}
+
 pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
     /// Add a promotion by cagematch ID. Validates that the ID resolves on
-    /// cagematch.net; canonical name, country, and logo are filled in on the
-    /// next scrape.
+    /// cagematch.net; full metadata is populated by the scraper.
     async fn add_promotion(
         &self,
         ctx: &Context<'_>,
@@ -97,10 +105,65 @@ impl MutationRoot {
         Ok(PromotionType(result))
     }
 
-    /// Remove a promotion and any linked sync logs.
+    /// Remove a promotion and cascading rows.
     async fn remove_promotion(&self, ctx: &Context<'_>, id: Uuid) -> Result<bool> {
         let db = ctx.data::<DatabaseConnection>()?;
         let result = promotion::Entity::delete_by_id(id).exec(db).await?;
         Ok(result.rows_affected > 0)
+    }
+
+    /// Scrape a single promotion: refresh metadata and upsert its titles +
+    /// current champions from cagematch.net.
+    async fn scrape_promotion(&self, ctx: &Context<'_>, id: Uuid) -> Result<ScrapeResult> {
+        let db = ctx.data::<DatabaseConnection>()?;
+        let cagematch = ctx.data::<Arc<CagematchClient>>()?;
+
+        match scraper::scrape_promotion(db, cagematch.clone(), id).await {
+            Ok(summary) => Ok(ScrapeResult {
+                promotion_id: summary.promotion_id,
+                titles_created: summary.titles_created,
+                titles_updated: summary.titles_updated,
+                error: None,
+            }),
+            Err(e) => Ok(ScrapeResult {
+                promotion_id: id,
+                titles_created: 0,
+                titles_updated: 0,
+                error: Some(e),
+            }),
+        }
+    }
+
+    /// Scrape every enabled promotion sequentially. Rate limiter serializes
+    /// outbound requests; failures on one promotion do not abort the rest.
+    async fn scrape_all_promotions(&self, ctx: &Context<'_>) -> Result<Vec<ScrapeResult>> {
+        use sea_orm::{ColumnTrait, QueryFilter};
+
+        let db = ctx.data::<DatabaseConnection>()?;
+        let cagematch = ctx.data::<Arc<CagematchClient>>()?;
+
+        let enabled = promotion::Entity::find()
+            .filter(promotion::Column::Enabled.eq(true))
+            .all(db)
+            .await?;
+
+        let mut out = Vec::with_capacity(enabled.len());
+        for p in enabled {
+            match scraper::scrape_promotion(db, cagematch.clone(), p.id).await {
+                Ok(summary) => out.push(ScrapeResult {
+                    promotion_id: summary.promotion_id,
+                    titles_created: summary.titles_created,
+                    titles_updated: summary.titles_updated,
+                    error: None,
+                }),
+                Err(e) => out.push(ScrapeResult {
+                    promotion_id: p.id,
+                    titles_created: 0,
+                    titles_updated: 0,
+                    error: Some(e),
+                }),
+            }
+        }
+        Ok(out)
     }
 }
