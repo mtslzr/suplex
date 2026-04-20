@@ -45,7 +45,9 @@ impl CagematchClient {
     /// and isn't cagematch's soft 404 (served as HTTP 200 with an error body).
     /// Used during Settings → Add Promotion.
     pub async fn validate_promotion(&self, cagematch_id: i32) -> Result<(), String> {
-        self.fetch(&self.promotion_url(cagematch_id)).await.map(|_| ())
+        self.fetch(&self.promotion_url(cagematch_id))
+            .await
+            .map(|_| ())
     }
 
     /// Fetch the main promotion page HTML.
@@ -120,8 +122,7 @@ pub fn parse_promotion_metadata(html: &str) -> PromotionMetadata {
     let doc = Html::parse_document(html);
 
     let (name_from_title, abbrev_from_title) = extract_name_and_abbrev_from_title(&doc);
-    let abbreviation =
-        extract_labeled_value(&doc, "Current abbreviation").or(abbrev_from_title);
+    let abbreviation = extract_labeled_value(&doc, "Current abbreviation").or(abbrev_from_title);
     let country = extract_labeled_value(&doc, "Location");
     let logo_url = extract_logo_url(&doc);
 
@@ -333,10 +334,7 @@ mod tests {
         assert_eq!(titles[0].name, "AEW World Championship");
         assert_eq!(titles[0].champion_display.as_deref(), Some("Darby Allin"));
         assert_eq!(titles[0].champion_cagematch_id, Some(18849));
-        assert_eq!(
-            titles[0].since_date,
-            NaiveDate::from_ymd_opt(2026, 4, 15)
-        );
+        assert_eq!(titles[0].since_date, NaiveDate::from_ymd_opt(2026, 4, 15));
         assert_eq!(titles[1].name, "AEW Continental Championship");
         assert_eq!(titles[1].champion_display.as_deref(), Some("Jon Moxley"));
     }

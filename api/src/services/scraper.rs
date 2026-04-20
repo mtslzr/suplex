@@ -7,9 +7,7 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::entities::{promotion, sync_log, title};
-use crate::external::cagematch::{
-    CagematchClient, parse_promotion_metadata, parse_titles_listing,
-};
+use crate::external::cagematch::{CagematchClient, parse_promotion_metadata, parse_titles_listing};
 
 #[derive(Debug)]
 pub struct ScrapeSummary {
