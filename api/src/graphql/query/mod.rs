@@ -1,7 +1,5 @@
 use async_graphql::{Context, Object, Result};
-use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
-};
+use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 use crate::entities::{promotion, title};
