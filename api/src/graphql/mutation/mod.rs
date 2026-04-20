@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use async_graphql::{Context, InputObject, Object, Result};
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 
 use crate::entities::promotion;
+use crate::external::cagematch::CagematchClient;
 
 use super::types::promotion::PromotionType;
 
@@ -25,14 +28,22 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
-    /// Add a promotion by cagematch ID. Canonical name, country, logo are
-    /// filled in on the next scrape.
+    /// Add a promotion by cagematch ID. Validates that the ID resolves on
+    /// cagematch.net; canonical name, country, and logo are filled in on the
+    /// next scrape.
     async fn add_promotion(
         &self,
         ctx: &Context<'_>,
         input: AddPromotionInput,
     ) -> Result<PromotionType> {
         let db = ctx.data::<DatabaseConnection>()?;
+        let cagematch = ctx.data::<Arc<CagematchClient>>()?;
+
+        cagematch
+            .validate_promotion(input.cagematch_id)
+            .await
+            .map_err(async_graphql::Error::new)?;
+
         let now = Utc::now().fixed_offset();
 
         let model = promotion::ActiveModel {
@@ -43,10 +54,7 @@ impl MutationRoot {
             abbreviation: Set(None),
             country: Set(None),
             logo_url: Set(None),
-            cagematch_url: Set(Some(format!(
-                "https://www.cagematch.net/?id=8&nr={}",
-                input.cagematch_id
-            ))),
+            cagematch_url: Set(Some(cagematch.promotion_url(input.cagematch_id))),
             accent_color: Set(input.accent_color),
             enabled: Set(true),
             last_synced_at: Set(None),
