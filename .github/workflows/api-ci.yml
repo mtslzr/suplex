@@ -1,0 +1,59 @@
+name: API CI
+
+on:
+  pull_request:
+    paths:
+      - "api/**"
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: suplex_test
+          POSTGRES_PASSWORD: suplex
+          POSTGRES_USER: suplex
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-retries 5
+          --health-timeout 5s
+        ports:
+          - 5432:5432
+
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgres://suplex:suplex@localhost:5432/suplex_test
+        run: cargo test -- --test-threads=1

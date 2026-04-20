@@ -1,0 +1,44 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-suplex}:${POSTGRES_PASSWORD:-suplex}@db:5432/${POSTGRES_DB:-suplex}
+    ports:
+      - "8083:8083"
+    volumes:
+      - logos:/app/data/logos
+
+  db:
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-suplex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-suplex}
+      POSTGRES_USER: ${POSTGRES_USER:-suplex}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-suplex}"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+    image: postgres:18-alpine
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    depends_on:
+      - api
+    ports:
+      - "3003:3003"
+
+volumes:
+  logos:
+  pgdata:

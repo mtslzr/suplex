@@ -1,0 +1,40 @@
+name: Web CI
+
+on:
+  pull_request:
+    paths:
+      - "web/**"
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+
+jobs:
+  check:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+          node-version: 24.14.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npx eslint .
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npx vitest run
