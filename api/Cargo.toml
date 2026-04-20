@@ -1,0 +1,30 @@
+[workspace]
+members = [".", "migration"]
+
+[package]
+name = "suplex-api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+migration = { path = "migration" }
+async-graphql = { version = "7.0", features = ["chrono", "uuid"] }
+async-graphql-axum = "7.0"
+axum = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+reqwest = { version = "0.13", features = ["json", "rustls"], default-features = false }
+sea-orm = { version = "1.1", features = [
+  "runtime-tokio-rustls",
+  "sqlx-postgres",
+  "with-chrono",
+  "with-json",
+  "with-uuid",
+] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["serde", "v4"] }

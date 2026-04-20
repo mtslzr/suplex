@@ -1,0 +1,82 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "after 8am and before 10pm"
+  ],
+  "timezone": "Europe/Lisbon",
+  "rangeStrategy": "pin",
+  "cargo": {
+    "rangeStrategy": "replace"
+  },
+  "prConcurrentLimit": 10,
+  "automerge": false,
+  "labels": [
+    "dependencies"
+  ],
+  "assignees": [
+    "mtslzr"
+  ],
+  "packageRules": [
+    {
+      "description": "Group all patch updates together",
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "patch updates"
+    },
+    {
+      "description": "Group Rust minor updates",
+      "matchManagers": [
+        "cargo"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "groupName": "Rust minor updates"
+    },
+    {
+      "description": "Group npm minor updates",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "groupName": "npm minor updates"
+    },
+    {
+      "description": "Group GitHub Actions minor updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "groupName": "GitHub Actions minor updates"
+    },
+    {
+      "description": "Separate major updates (one PR per package)",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": null,
+      "labels": [
+        "dependencies",
+        "major-update"
+      ]
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "after 8am and before 10pm"
+    ]
+  },
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🤖 Renovate Dependency Dashboard",
+  "commitMessagePrefix": "⬆️ ",
+  "semanticCommits": "enabled"
+}

@@ -1,0 +1,44 @@
+# Rust
+api/target/
+**/*.rs.bk
+
+# Node
+node_modules/
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Generated
+web/src/generated/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# PostgreSQL
+pgdata/
+
+# Backups
+backups/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/

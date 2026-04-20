@@ -1,0 +1,32 @@
+# Build stage
+FROM rust:1.94-slim-bookworm AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+
+# Cache dependencies by building them first
+COPY api/Cargo.toml api/Cargo.lock ./
+COPY api/migration/Cargo.toml migration/Cargo.toml
+RUN mkdir src && echo "fn main() {}" > src/main.rs && echo "pub fn main() {}" > src/lib.rs
+RUN mkdir -p migration/src && echo "fn main() {}" > migration/src/main.rs && echo "" > migration/src/lib.rs
+RUN cargo build --release && rm -rf src migration/src
+
+# Build the actual application
+COPY api/src ./src
+COPY api/migration/src ./migration/src
+RUN touch src/main.rs src/lib.rs migration/src/lib.rs && cargo build --release
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/target/release/suplex-api /usr/local/bin/suplex-api
+
+WORKDIR /app
+
+EXPOSE 8083
+
+CMD ["suplex-api"]
